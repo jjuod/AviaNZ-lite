@@ -272,8 +272,8 @@ class AviaNZ(QMainWindow):
 
             self.listLoadFile(os.path.basename(firstFile))
 
-        if self.DOC and not cheatsheet and not zooniverse:
-            self.setOperatorReviewerDialog()
+        # if self.DOC and not cheatsheet and not zooniverse:
+        #     self.setOperatorReviewerDialog()
 
     def createMenu(self):
         """ Create the menu entries at the top of the screen and link them as appropriate.
