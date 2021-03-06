@@ -1038,16 +1038,21 @@ class AviaNZ(QMainWindow):
         # Also need to enter read-only mode:
         # no editing of segments, can only change labels on the premade one
         # But it is a costly operation, so check if needed:
-        if self.batmode and not self.readonly.isChecked():
-            self.readonly.setChecked(True)
-            self.makeReadOnly()
-        elif self.batmode and self.readonly.isChecked():
-            pass
-        elif self.readonly.isChecked() and not self.batmode:
-            self.readonly.setChecked(False)
-            self.makeReadOnly()
-        else:  # not checked, not batmode
-            pass
+        if self.batmode:
+            if self.readonly.isChecked():
+                pass
+            else:
+                # force read-only on load of any bat file
+                # (but it won't be stored in config)
+                self.readonly.setChecked(True)
+                self.makeReadOnly()
+        else:
+            # (changes will be stored in config here)
+            if self.readonly.isChecked():
+                self.readonly.setChecked(self.config['readOnly'])
+                self.makeReadOnly()
+            else:  # not checked, not batmode
+                pass
         self.readonly.setEnabled(not self.batmode)
 
     def refreshSegmentControls(self):
@@ -1810,9 +1815,12 @@ class AviaNZ(QMainWindow):
         Turns off the listeners for the amplitude and spectrogram plots.
         Also has to go through all of the segments, turn off the listeners, and make them unmovable.
         """
-        self.config['readOnly'] = self.readonly.isChecked()
-        self.statusRO.setText("Read-only mode" if self.config['readOnly'] else "")
+        # config stores "bird-mode" preference, while bats are always forced read-only
+        if not self.batmode:
+            self.config['readOnly'] = self.readonly.isChecked()
+
         if self.readonly.isChecked():
+            self.statusRO.setText("Read-only mode")
             # this is for accepting drag boxes or not
             self.p_spec.enableDrag = False
 
@@ -1825,6 +1833,7 @@ class AviaNZ(QMainWindow):
                 self.removeSegments(delete=False)
                 self.drawfigMain(remaking=True)
         else:
+            self.statusRO.setText("")
             self.p_spec.enableDrag = self.config['specMouseAction']==3
             if hasattr(self, 'sp'):
                 self.removeSegments(delete=False)
