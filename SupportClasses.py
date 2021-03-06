@@ -24,6 +24,12 @@
 from openpyxl import load_workbook, Workbook
 from openpyxl.styles import Font
 
+import time
+import math
+import numpy as np
+import os, json
+import re
+
 QtMM = True
 try:
     import SupportClasses_GUI
@@ -31,14 +37,6 @@ except ImportError:
     print("No GUI")
     QtMM = False
 
-import time
-import math
-import numpy as np
-import os, json
-import re
-import sys
-from tensorflow.keras.models import model_from_json
-from tensorflow.keras.models import load_model
 
 class Log(object):
     """ Used for logging info during batch processing.
@@ -222,35 +220,37 @@ class ConfigLoader(object):
             if "CNN" not in filt:
                 continue
             elif filt["CNN"]:
-                if species == "NZ Bats":
-                    try:
-                        model = load_model(os.path.join(dircnn, filt["CNN"]["CNN_name"]+'.h5'))
-                        targetmodels[species] = [model, filt["CNN"]["win"], filt["CNN"]["inputdim"], filt["CNN"]["output"],
-                                                 filt["CNN"]["windowInc"], filt["CNN"]["thr"]]
-                        print('Loaded model:', os.path.join(dircnn, filt["CNN"]["CNN_name"]))
-                    except Exception as e:
-                        print("Could not load CNN model from file:", os.path.join(dircnn, filt["CNN"]["CNN_name"]), e)
-                else:
-                    try:
-                        json_file = open(os.path.join(dircnn, filt["CNN"]["CNN_name"]) + '.json', 'r')
-                        loaded_model_json = json_file.read()
-                        json_file.close()
-                        model = model_from_json(loaded_model_json)
-                        model.load_weights(os.path.join(dircnn, filt["CNN"]["CNN_name"]) + '.h5')
-                        print('Loaded model:', os.path.join(dircnn, filt["CNN"]["CNN_name"]))
-                        model.compile(loss=filt["CNN"]["loss"], optimizer=filt["CNN"]["optimizer"], metrics=['accuracy'])
-                        if 'fRange' in filt["CNN"]:
-                            targetmodels[filt["CNN"]["CNN_name"]] = [model, filt["CNN"]["win"], filt["CNN"]["inputdim"],
-                                                     filt["CNN"]["output"],
-                                                     filt["CNN"]["windowInc"], filt["CNN"]["thr"], True,
-                                                     filt["CNN"]["fRange"]]
-                        else:
-                            targetmodels[filt["CNN"]["CNN_name"]] = [model, filt["CNN"]["win"], filt["CNN"]["inputdim"],
-                                                     filt["CNN"]["output"], filt["CNN"]["windowInc"],
-                                                     filt["CNN"]["thr"], False]
-                    except Exception as e:
-                        print("Could not load CNN model from file:", os.path.join(dircnn, filt["CNN"]["CNN_name"]))
-                        print(e)
+                print("Warning: CNNs will not be loaded in AviaNZ-lite")
+                continue
+                # if species == "NZ Bats":
+                #     try:
+                #         model = load_model(os.path.join(dircnn, filt["CNN"]["CNN_name"]+'.h5'))
+                #         targetmodels[species] = [model, filt["CNN"]["win"], filt["CNN"]["inputdim"], filt["CNN"]["output"],
+                #                                  filt["CNN"]["windowInc"], filt["CNN"]["thr"]]
+                #         print('Loaded model:', os.path.join(dircnn, filt["CNN"]["CNN_name"]))
+                #     except Exception as e:
+                #         print("Could not load CNN model from file:", os.path.join(dircnn, filt["CNN"]["CNN_name"]), e)
+                # else:
+                #     try:
+                #         json_file = open(os.path.join(dircnn, filt["CNN"]["CNN_name"]) + '.json', 'r')
+                #         loaded_model_json = json_file.read()
+                #         json_file.close()
+                #         model = model_from_json(loaded_model_json)
+                #         model.load_weights(os.path.join(dircnn, filt["CNN"]["CNN_name"]) + '.h5')
+                #         print('Loaded model:', os.path.join(dircnn, filt["CNN"]["CNN_name"]))
+                #         model.compile(loss=filt["CNN"]["loss"], optimizer=filt["CNN"]["optimizer"], metrics=['accuracy'])
+                #         if 'fRange' in filt["CNN"]:
+                #             targetmodels[filt["CNN"]["CNN_name"]] = [model, filt["CNN"]["win"], filt["CNN"]["inputdim"],
+                #                                      filt["CNN"]["output"],
+                #                                      filt["CNN"]["windowInc"], filt["CNN"]["thr"], True,
+                #                                      filt["CNN"]["fRange"]]
+                #         else:
+                #             targetmodels[filt["CNN"]["CNN_name"]] = [model, filt["CNN"]["win"], filt["CNN"]["inputdim"],
+                #                                      filt["CNN"]["output"], filt["CNN"]["windowInc"],
+                #                                      filt["CNN"]["thr"], False]
+                #     except Exception as e:
+                #         print("Could not load CNN model from file:", os.path.join(dircnn, filt["CNN"]["CNN_name"]))
+                #         print(e)
         print("Loaded CNN models:", list(targetmodels.keys()))
         return targetmodels
 

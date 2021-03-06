@@ -1,3 +1,10 @@
+#### This repository stores the Lite version of AviaNZ.
+
+The Lite version does not allow training or using CNN-based recognisers, in return for smaller and more portable installation.
+If you are looking for the full version, visit https://github.com/smarsland/AviaNZ.
+
+-------
+
 Welcome to AviaNZ, an open-source project for manual and automatic analysis of bio-acoustic recordings.
 
 This software enables you to: 

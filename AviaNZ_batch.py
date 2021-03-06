@@ -107,7 +107,6 @@ class AviaNZ_batchProcess():
             if "NZ Bats" in self.species:
                 # Should bats only be possible alone?
                 self.method = "Click"   # old bat method
-                #self.CNNDicts = self.ConfigLoader.CNNmodels(self.FilterDicts, self.filtersDir, self.species)
             elif "NZ Bats_NP" in self.species:
                 self.method = "Bats"
             else:
@@ -569,101 +568,105 @@ class AviaNZ_batchProcess():
                                 CNNmodel = self.CNNDicts.get(spInfo['CNN']['CNN_name'])
 
                             if self.method=="Click":
-                                # bat-style CNN:
-                                model = CNNmodel[0]
-                                thr1 = CNNmodel[5][0]
-                                thr2 = CNNmodel[5][1]
-                                if click_label=='Click':
-                                    # we enter in the cnn only if we got a click
-                                    sg_test = np.ndarray(shape=(np.shape(data_test)[0],np.shape(data_test[0][0])[0], np.shape(data_test[0][0])[1]), dtype=float)
-                                    spec_id=[]
-                                    print('Number of file spectrograms = ', np.shape(data_test)[0])
-                                    for j in range(np.shape(data_test)[0]):
-                                        maxg = np.max(data_test[j][0][:])
-                                        sg_test[j][:] = data_test[j][0][:]/maxg
-                                        spec_id.append(data_test[j][1:3])
+                                print("ERROR: bat detection not possible in AviaNZ-lite, use the full version")
+                                return
+                                # # bat-style CNN:
+                                # model = CNNmodel[0]
+                                # thr1 = CNNmodel[5][0]
+                                # thr2 = CNNmodel[5][1]
+                                # if click_label=='Click':
+                                #     # we enter in the cnn only if we got a click
+                                #     sg_test = np.ndarray(shape=(np.shape(data_test)[0],np.shape(data_test[0][0])[0], np.shape(data_test[0][0])[1]), dtype=float)
+                                #     spec_id=[]
+                                #     print('Number of file spectrograms = ', np.shape(data_test)[0])
+                                #     for j in range(np.shape(data_test)[0]):
+                                #         maxg = np.max(data_test[j][0][:])
+                                #         sg_test[j][:] = data_test[j][0][:]/maxg
+                                #         spec_id.append(data_test[j][1:3])
 
-                                    # CNN classification of clicks
-                                    x_test = sg_test
-                                    test_images = x_test.reshape(x_test.shape[0],6, 512, 1)
-                                    test_images = test_images.astype('float32')
+                                #     # CNN classification of clicks
+                                #     x_test = sg_test
+                                #     test_images = x_test.reshape(x_test.shape[0],6, 512, 1)
+                                #     test_images = test_images.astype('float32')
 
-                                    # recovering labels
-                                    predictions = model.predict(test_images)
-                                    # predictions is an array #imagesX #of classes which entries are the probabilities for each class
+                                #     # recovering labels
+                                #     predictions = model.predict(test_images)
+                                #     # predictions is an array #imagesX #of classes which entries are the probabilities for each class
 
-                                    # Create a label (list of dicts with species, certs) for the single segment
-                                    print('Assessing file label...')
-                                    label = self.File_label(predictions, thr1=thr1, thr2=thr2)
-                                    print('CNN detected: ', label)
-                                    if len(label)>0:
-                                        # Convert the annotation into a full segment in self.segments
-                                        thisPageStart = start / self.sampleRate
-                                        self.makeSegments([thisPageStart, thisPageLen, label])
-                                else:
-                                    # do not create any segments
-                                    print("Nothing detected")
+                                #     # Create a label (list of dicts with species, certs) for the single segment
+                                #     print('Assessing file label...')
+                                #     label = self.File_label(predictions, thr1=thr1, thr2=thr2)
+                                #     print('CNN detected: ', label)
+                                #     if len(label)>0:
+                                #         # Convert the annotation into a full segment in self.segments
+                                #         thisPageStart = start / self.sampleRate
+                                #         self.makeSegments([thisPageStart, thisPageLen, label])
+                                # else:
+                                #     # do not create any segments
+                                #     print("Nothing detected")
                             elif self.method == "Bats":     # Let's do it here - PostProc class is not supporting bats
-                                model = CNNmodel[0]
-                                if thisPageLen < CNNmodel[1][0]:
-                                    continue
-                                elif thisPageLen >= CNNmodel[1][0]:
-                                    # print('duration:', thisPageLen)
-                                    n = math.ceil((thisPageLen - 0 - CNNmodel[1][0]) / CNNmodel[1][1] + 1)
-                                # print('* hop:', CNNmodel[1][1], 'n:', n)
+                                print("ERROR: bat detection not possible in AviaNZ-lite, use the full version")
+                                return
+                                # model = CNNmodel[0]
+                                # if thisPageLen < CNNmodel[1][0]:
+                                #     continue
+                                # elif thisPageLen >= CNNmodel[1][0]:
+                                #     # print('duration:', thisPageLen)
+                                #     n = math.ceil((thisPageLen - 0 - CNNmodel[1][0]) / CNNmodel[1][1] + 1)
+                                # # print('* hop:', CNNmodel[1][1], 'n:', n)
 
-                                featuress = []
-                                specFrameSize = len(range(0, int(CNNmodel[1][0] * self.sp.sampleRate - self.sp.window_width), self.sp.incr))
-                                for i in range(int(n)):
-                                    # print('**', self.filename, CNNmodel[1][0], 0 + CNNmodel[1][1] * i, self.sp.sampleRate,
-                                    #       '************************************')
-                                    # Sgram images
-                                    sgRaw = self.sp.sg
-                                    sgstart = int(CNNmodel[1][1] * i * self.sp.sampleRate / self.sp.incr)
-                                    sgend = sgstart + specFrameSize
-                                    if sgend > np.shape(sgRaw)[0]:
-                                        sgend = np.shape(sgRaw)[0]
-                                        sgstart = np.shape(sgRaw)[0] - specFrameSize
-                                    if sgstart < 0:
-                                        continue
-                                    sgRaw_i = sgRaw[sgstart:sgend, :]
-                                    maxg = np.max(sgRaw_i)
-                                    # Normalize and rotate
-                                    featuress.append([np.rot90(sgRaw_i / maxg).tolist()])
-                                featuress = np.array(featuress)
-                                featuress = featuress.reshape(featuress.shape[0], CNNmodel[2][0], CNNmodel[2][1], 1)
-                                featuress = featuress.astype('float32')
-                                if np.shape(featuress)[0] > 0:
-                                    probs = model.predict(featuress)
-                                else:
-                                    probs = 0
-                                if isinstance(probs, int):
-                                    # there is no at least one img generated from this segment, very unlikely to be a true seg.
-                                    label = []
-                                else:
-                                    ind = [np.argsort(probs[:, i]).tolist() for i in range(np.shape(probs)[1])]
+                                # featuress = []
+                                # specFrameSize = len(range(0, int(CNNmodel[1][0] * self.sp.sampleRate - self.sp.window_width), self.sp.incr))
+                                # for i in range(int(n)):
+                                #     # print('**', self.filename, CNNmodel[1][0], 0 + CNNmodel[1][1] * i, self.sp.sampleRate,
+                                #     #       '************************************')
+                                #     # Sgram images
+                                #     sgRaw = self.sp.sg
+                                #     sgstart = int(CNNmodel[1][1] * i * self.sp.sampleRate / self.sp.incr)
+                                #     sgend = sgstart + specFrameSize
+                                #     if sgend > np.shape(sgRaw)[0]:
+                                #         sgend = np.shape(sgRaw)[0]
+                                #         sgstart = np.shape(sgRaw)[0] - specFrameSize
+                                #     if sgstart < 0:
+                                #         continue
+                                #     sgRaw_i = sgRaw[sgstart:sgend, :]
+                                #     maxg = np.max(sgRaw_i)
+                                #     # Normalize and rotate
+                                #     featuress.append([np.rot90(sgRaw_i / maxg).tolist()])
+                                # featuress = np.array(featuress)
+                                # featuress = featuress.reshape(featuress.shape[0], CNNmodel[2][0], CNNmodel[2][1], 1)
+                                # featuress = featuress.astype('float32')
+                                # if np.shape(featuress)[0] > 0:
+                                #     probs = model.predict(featuress)
+                                # else:
+                                #     probs = 0
+                                # if isinstance(probs, int):
+                                #     # there is no at least one img generated from this segment, very unlikely to be a true seg.
+                                #     label = []
+                                # else:
+                                #     ind = [np.argsort(probs[:, i]).tolist() for i in range(np.shape(probs)[1])]
 
-                                    if n > 4:
-                                        n = 4
-                                    prob = [np.mean(probs[ind[0][-n // 2:], 0]),
-                                            np.mean(probs[ind[1][-n // 2:], 1]),
-                                            (np.sum(probs[ind[0][-n // 2:], 2]) + np.sum(probs[ind[1][-n // 2:], 2])) / (n // 2 * 2)]
-                                    print(self.filename, prob)
-                                    if prob[0] >= CNNmodel[5][0][-1]:
-                                        label = [{"species": "Long-tailed bat", "certainty": 100}]
-                                    elif prob[1] >= CNNmodel[5][1][-1]:
-                                        label = [{"species": "Short-tailed bat", "certainty": 100}]
-                                    elif prob[0] >= CNNmodel[5][0][0]:
-                                        label = [{"species": "Long-tailed bat", "certainty": 50}]
-                                    elif prob[1] >= CNNmodel[5][1][0]:
-                                        label = [{"species": "Short-tailed bat", "certainty": 50}]
-                                    else:
-                                        label = []
-                                print('CNN detected: ', label)
-                                if len(label) > 0:
-                                    # Convert the annotation into a full segment in self.segments
-                                    thisPageStart = start / self.sampleRate
-                                    self.makeSegments([thisPageStart, thisPageLen, label])
+                                #     if n > 4:
+                                #         n = 4
+                                #     prob = [np.mean(probs[ind[0][-n // 2:], 0]),
+                                #             np.mean(probs[ind[1][-n // 2:], 1]),
+                                #             (np.sum(probs[ind[0][-n // 2:], 2]) + np.sum(probs[ind[1][-n // 2:], 2])) / (n // 2 * 2)]
+                                #     print(self.filename, prob)
+                                #     if prob[0] >= CNNmodel[5][0][-1]:
+                                #         label = [{"species": "Long-tailed bat", "certainty": 100}]
+                                #     elif prob[1] >= CNNmodel[5][1][-1]:
+                                #         label = [{"species": "Short-tailed bat", "certainty": 100}]
+                                #     elif prob[0] >= CNNmodel[5][0][0]:
+                                #         label = [{"species": "Long-tailed bat", "certainty": 50}]
+                                #     elif prob[1] >= CNNmodel[5][1][0]:
+                                #         label = [{"species": "Short-tailed bat", "certainty": 50}]
+                                #     else:
+                                #         label = []
+                                # print('CNN detected: ', label)
+                                # if len(label) > 0:
+                                #     # Convert the annotation into a full segment in self.segments
+                                #     thisPageStart = start / self.sampleRate
+                                #     self.makeSegments([thisPageStart, thisPageLen, label])
                             else:
                                 # bird-style CNN and other processing:
                                 post = Segment.PostProcess(configdir=self.configdir, audioData=self.audiodata[start:end], sampleRate=self.sampleRate, tgtsampleRate=spInfo["SampleRate"], segments=thisPageSegs[filtix], subfilter=spInfo['Filters'][filtix], CNNmodel=CNNmodel, cert=50)

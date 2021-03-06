@@ -338,7 +338,6 @@ class AviaNZ(QMainWindow):
         if not self.DOC:
             specMenu.addSeparator()
             self.showDiagnosticTick = specMenu.addAction("Show training diagnostics",self.showDiagnosticDialog)
-            self.showDiagnosticCNN = specMenu.addAction("Show CNN training diagnostics", self.showDiagnosticDialogCNN)
             self.extraMenu = specMenu.addMenu("Diagnostic plots")
             extraGroup = QActionGroup(self)
             for ename in ["none", "Wavelet scalogram", "Wavelet correlations", "Wind energy", "Rain", "Filtered spectrogram, new + AA", "Filtered spectrogram, new", "Filtered spectrogram, old"]:
@@ -412,7 +411,6 @@ class AviaNZ(QMainWindow):
         recMenu = self.menuBar().addMenu("&Recognisers")
         extrarecMenu = recMenu.addMenu("Train an automated recogniser")
         extrarecMenu.addAction("Train a wavelet recogniser", self.buildRecogniser)
-        extrarecMenu.addAction("Extend a wavelet recogniser with CNN", self.buildCNN)
         recMenu.addAction("Test a recogniser", self.testRecogniser)
         recMenu.addAction("Manage recognisers", self.manageFilters)
         recMenu.addAction("Customise a recogniser (use existing ROC)", self.customiseFiltersROC)
@@ -3665,17 +3663,6 @@ class AviaNZ(QMainWindow):
         self.diagnosticDialog.show()
         self.diagnosticDialog.activateWindow()
 
-    def showDiagnosticDialogCNN(self):
-        """ Create the dialog to set diagnostic plot parameters.
-        """
-        if not hasattr(self, 'diagnosticDialogCNN'):
-            self.diagnosticDialogCNN = Dialogs.DiagnosticCNN(self.FilterDicts)
-            self.diagnosticDialogCNN.filter.currentTextChanged.connect(self.setCTDiagnosticsCNN)
-            self.diagnosticDialogCNN.activate.clicked.connect(self.setDiagnosticCNN)
-            self.diagnosticDialogCNN.clear.clicked.connect(self.clearDiagnosticCNN)
-        self.diagnosticDialogCNN.show()
-        self.diagnosticDialogCNN.activateWindow()
-
     def clearDiagnostic(self):
         """ Cleans up diagnostic plot space. Should be called
             when loading new file/page, or from Diagnostic Dialog.
@@ -3841,67 +3828,6 @@ class AviaNZ(QMainWindow):
             self.d_plot.hide()
         except Exception as e:
             print(e)
-
-    def setDiagnosticCNN(self):
-        """ Takes parameters returned from DiagnosticDialog
-            and draws the training diagnostic plots.
-        """
-        from itertools import chain, repeat
-        with pg.BusyCursor():
-            self.diagnosticDialogCNN.activate.setEnabled(False)
-            self.statusLeft.setText("Making CNN diagnostic plots...")
-
-            # Skip Wavelet filter, and show the raw CNN probabilities for current page, block length depends on CNN input size
-            # load target CNN model if exists
-            [filtername, selectedCTs] = self.diagnosticDialogCNN.getValues()
-            print(selectedCTs)
-            speciesData = self.FilterDicts[filtername]
-            CTs = []
-            for f in speciesData['Filters']:
-                CTs.append(f['calltype'])
-            CTs.append('Noise')
-            self.CNNDicts = self.ConfigLoader.CNNmodels(self.FilterDicts, self.filtersDir, [filtername])
-
-            segment = [[self.startRead, self.startRead + self.datalengthSec]]
-            CNNmodel = None
-            probs = 0
-            if filtername in self.CNNDicts.keys():
-                CNNmodel = self.CNNDicts[filtername]
-            post = Segment.PostProcess(configdir=self.configdir, audioData=self.audiodata,
-                                       sampleRate=self.sampleRate,
-                                       tgtsampleRate=speciesData["SampleRate"], segments=segment,
-                                       subfilter=speciesData['Filters'][0], CNNmodel=CNNmodel, cert=50)
-            if CNNmodel:
-                CNNwindow, probs = post.CNNDiagnostic()
-            if isinstance(probs, int):
-                self.diagnosticDialogCNN.activate.setEnabled(True)
-                return
-
-            # clear plot box and add legend
-            self.clearDiagnostic()
-            self.p_legend = pg.LegendItem()
-            self.p_legend.setParentItem(self.p_plot)
-
-            Psep = np.zeros((len(CTs), len(probs[:, 0].tolist())))
-            for i in range(len(CTs)):
-                Psep[i, :] = probs[:, i].tolist()
-
-            # plot
-            for ct in range(len(CTs)):
-                if not selectedCTs[ct]:
-                    continue
-                else:
-                    # basic divergent color palette
-                    plotcol = (255 * ct // len(CTs), 127 * (ct % 2), 0)
-                    y = Psep[ct, :]
-                    # x = np.linspace(0, CNNwindow*len(y), len(y))
-                    x = np.linspace(CNNwindow/2, CNNwindow*len(y)-CNNwindow/2, len(y))
-                    self.plotDiag = pg.PlotDataItem(x, y, pen=fn.mkPen(plotcol, width=2))
-                    self.p_plot.addItem(self.plotDiag)
-                    self.p_legend.addItem(self.plotDiag, CTs[ct])
-            self.d_plot.show()
-        self.diagnosticDialogCNN.activate.setEnabled(True)
-        self.statusLeft.setText("Ready")
 
     def showSpectrogramDialog(self):
         """ Create spectrogram dialog when the button is pressed.
@@ -4380,16 +4306,6 @@ class AviaNZ(QMainWindow):
         self.buildRecAdvWizard.exec_()
         # reread filters list with the new one
         self.FilterDicts = self.ConfigLoader.filters(self.filtersDir)
-
-    def buildCNN(self):
-        """Listener for 'Build a CNN'
-        """
-        self.saveSegments()
-        self.buildCNNWizard = DialogsTraining.BuildCNNWizard(self.filtersDir, self.config, self.configdir)
-        self.buildCNNWizard.button(3).clicked.connect(self.saveNotestRecogniserCNN)
-        self.buildCNNWizard.saveTestBtn.clicked.connect(self.saveTestRecogniserCNN)
-        self.buildCNNWizard.activateWindow()
-        self.buildCNNWizard.exec_()
 
     def testRecogniser(self, filter=None):
         """ Listener for the Test Recogniser action """
