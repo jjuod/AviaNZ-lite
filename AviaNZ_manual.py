@@ -5803,6 +5803,10 @@ class AviaNZ(QMainWindow):
         #     retval = msg.exec_()
         #     print "value of pressed message box button:", retval
         #     return retval
+        
+        # disabled saving:
+        self.segmentsToSave = False
+
 
         if self.segmentsToSave:
             self.segments.metadata["Operator"] = self.operator
@@ -5827,19 +5831,19 @@ class AviaNZ(QMainWindow):
         print("Closing", self.filename)
 
         # update recent files list
-        if self.filename is not None and self.filename not in self.config['RecentFiles']:
-            self.config['RecentFiles'].append(self.filename)
-            if len(self.config['RecentFiles'])>4:
-                del self.config['RecentFiles'][0]
-            # Note: we're making this flag useless as every new file open will update the config
-            self.saveConfig = True
+        # if self.filename is not None and self.filename not in self.config['RecentFiles']:
+        #     self.config['RecentFiles'].append(self.filename)
+        #     if len(self.config['RecentFiles'])>4:
+        #         del self.config['RecentFiles'][0]
+        #     # Note: we're making this flag useless as every new file open will update the config
+        #     self.saveConfig = True
 
         # Add in the operator and reviewer at the top, and then save the segments and the config file.
-        if self.saveConfig:
-            self.ConfigLoader.configwrite(self.config, self.configfile)
+        # if self.saveConfig:
+        #     self.ConfigLoader.configwrite(self.config, self.configfile)
 
         # Save the shortBirdList
-        self.ConfigLoader.blwrite(self.shortBirdList, self.config['BirdListShort'], self.configdir)
+        # self.ConfigLoader.blwrite(self.shortBirdList, self.config['BirdListShort'], self.configdir)
 
     def restart(self):
         """ Listener for the restart option, which uses exit(1) to restart the program at the splash screen """

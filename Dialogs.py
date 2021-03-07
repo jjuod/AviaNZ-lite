@@ -825,10 +825,11 @@ class Segmentation(QDialog):
         self.setMinimumWidth(350)
 
         self.algs = QComboBox()
-        if DOC:
-            self.algs.addItems(["Wavelets", "FIR", "Median Clipping"])
-        else:
-            self.algs.addItems(["Default","Median Clipping","Fundamental Frequency","FIR","Wavelets","Harma","Power","Cross-Correlation"])
+        # if DOC:
+        #     self.algs.addItems(["Wavelets", "FIR", "Median Clipping"])
+        # else:
+        #     self.algs.addItems(["Default","Median Clipping","Fundamental Frequency","FIR","Wavelets","Harma","Power","Cross-Correlation"])
+        self.algs.addItems(["Median Clipping"])
         self.algs.currentIndexChanged[str].connect(self.changeBoxes)
         self.undo = QPushButton("Undo")
         self.activate = QPushButton("Segment")
@@ -881,7 +882,8 @@ class Segmentation(QDialog):
         self.medThr.setRange(0.2,6)
         self.medThr.setSingleStep(1)
         self.medThr.setDecimals(1)
-        self.medThr.setValue(3)
+        #self.medThr.setValue(3)
+        self.medThr.setValue(4)
 
         # set min seg size for median clipping
         self.medSize = QSlider(Qt.Horizontal)
@@ -889,9 +891,10 @@ class Segmentation(QDialog):
         self.medSize.setTickInterval(100)
         self.medSize.setRange(100,2000)
         self.medSize.setSingleStep(100)
-        self.medSize.setValue(1000)
+        #self.medSize.setValue(1000)
+        self.medSize.setValue(250)
         self.medSize.valueChanged.connect(self.medSizeChange)
-        self.medSizeText = QLabel("Minimum length: 1000 ms")
+        self.medSizeText = QLabel("Minimum length: 0.25 sec")
 
         self.ecThr = QDoubleSpinBox()
         self.ecThr.setRange(0.001,6)
@@ -991,22 +994,25 @@ class Segmentation(QDialog):
         self.minlen.setTickInterval(0.25*1000)
         self.minlen.setRange(0.25*1000, 10*1000)
         self.minlen.setSingleStep(0.25*1000)
-        self.minlen.setValue(0.5*1000)
+        #self.minlen.setValue(0.5*1000)
+        self.minlen.setValue(0.25*1000)
         self.minlen.valueChanged.connect(self.minLenChange)
-        self.minlenlbl = QLabel("Minimum segment length: 0.5 sec")
+        self.minlenlbl = QLabel("Minimum segment length: 0.25 sec")
 
         self.maxgap = QSlider(Qt.Horizontal)
         self.maxgap.setTickPosition(QSlider.TicksBelow)
         self.maxgap.setTickInterval(0.25*1000)
         self.maxgap.setRange(0.25*1000, 10*1000)
         self.maxgap.setSingleStep(0.5*1000)
-        self.maxgap.setValue(1*1000)
+        #self.maxgap.setValue(1*1000)
+        self.maxgap.setValue(0.25*1000)
         self.maxgap.valueChanged.connect(self.maxGapChange)
-        self.maxgaplbl = QLabel("Maximum gap between syllables: 1 sec")
+        self.maxgaplbl = QLabel("Maximum gap between syllables: 0.25 sec")
 
         self.wind = QCheckBox("Remove wind")
         self.rain = QCheckBox("Remove rain")
         Box.addWidget(self.wind)
+        self.wind.setEnabled(False)
         Box.addWidget(self.rain)
         Box.addWidget(self.maxgaplbl)
         Box.addWidget(self.maxgap)
@@ -1025,10 +1031,13 @@ class Segmentation(QDialog):
         self.algs.show()
         self.undo.show()
         self.activate.show()
-        if DOC:
-            self.changeBoxes("Wavelets")
-        else:
-            self.changeBoxes("Default")
+        # this is needed to set the initial box placement
+        #if DOC:
+        #    self.changeBoxes("Wavelets")
+        #else:
+        #    self.changeBoxes("Default")
+        self.changeBoxes("Median Clipping")   
+        
 
     def changeBoxes(self,alg):
         # This does the hiding and showing of the options as the algorithm changes
